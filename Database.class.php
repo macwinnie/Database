@@ -30,7 +30,6 @@ class Database{
     
     public function query($query, $params = array()){
         $sql = $this->prepare_query($query, $params);
-        watchdog("Executing SQL Query: \"".$sql."\".");
         $result = $this->mysqli->query($sql);
         if(!is_null($result) && $this->mysqli->errno == 0){
             $this->errno = null;
@@ -45,9 +44,6 @@ class Database{
         }else{
             $this->errno = $this->mysqli->errno;
             $this->error = $this->mysqli->error;
-            if(substr($query, 0, 22) != "INSERT INTO {watchdog}"){
-                watchdog("SQL Query \"".$this->mysqli->real_escape_string($sql)."\" failed: ".$this->errno." - ".$this->error, 3);
-            }
             return false;
         }
     }
@@ -82,9 +78,6 @@ class Database{
     
     public function query_row($query, $params = array()){
     	$sql = $this->prepare_query($query, $params);
-    	if(!watchdog("Executing SQL Query: \"".$sql."\". (row)")){
-    	    return false;
-    	}
     	$result = $this->cacheout($sql, "row");
         if($result !== false){
             return $result;
@@ -104,9 +97,6 @@ class Database{
     
     public function execute($query, $params = array()){
         $sql = $this->prepare_query($query, $params);
-        if(substr($query, 0, 22) != "INSERT INTO {watchdog}"){
-            watchdog("Executing SQL Query: \"".$sql."\". (execute)");
-        }
         if($this->mysqli->query($sql)){
             $this->errno = null;
             $this->error = null;
