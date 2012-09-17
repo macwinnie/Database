@@ -8,6 +8,7 @@ class Database{
     private $cache;
     private $count;
     private $hostname;
+    private $lastquerysql;
     
     public function __construct(){
         $this->hostname = php_uname('n');
@@ -146,6 +147,7 @@ class Database{
     		$query = preg_replace('#'.$key.'\b#', $value, $query);
     	}
     	$query = preg_replace("/\s\{(\w*)\}(\s|;|)/", " `".$dbprefix."\\1`\\2", $query);
+    	$this->lastquerysql = $query;
     	return $query;
     }
     
@@ -180,6 +182,10 @@ class Database{
     
     public function getfieldcount(){
         return $this->mysqli->field_count;
+    }
+    
+    public function getlastquerysql(){
+    	return $this->lastquerysql();
     }
     
     public function __destruct(){
