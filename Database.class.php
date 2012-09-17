@@ -127,6 +127,9 @@ class Database{
     
     private function prepare_query($query, $params){
     	global $dbprefix;
+    	if(substr($query, -1) != ";"){
+    		$query .= ";";
+    	};
     	foreach($params as $key => $value){
     		if(is_array($value)){
     			$i=0;
