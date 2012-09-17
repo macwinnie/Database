@@ -13,7 +13,7 @@ class Database{
         $this->hostname = php_uname('n');
         $this->cache = array();
         require_once('config.php');
-       	@$this->mysqli = new mysqli(DBHOST, DBUSER, DBPASS, DBNAME);
+       	@$this->mysqli = new mysqli($dbhost, $dbuser, $dbpass, $dbname);
         if(!@$this->mysqli->stat()){
             echo json_encode(array("data" => array("errno" => $this->mysqli->connect_errno, "error" => $this->mysqli->connect_error), "error" => 2));
             $this->connect_errno = null;
@@ -125,6 +125,7 @@ class Database{
     }
     
     private function prepare_query($query, $params){
+    	global $dbprefix;
     	foreach($params as $key => $value){
     		if(is_array($value)){
     			$i=0;
@@ -144,7 +145,7 @@ class Database{
     		}
     		$query = preg_replace('#'.$key.'\b#', $value, $query);
     	}
-    	$query = preg_replace("/\s\{(\w*)\}(\s|;|)/", " `".YPANEL_PREFIX."\\1`\\2", $query);
+    	$query = preg_replace("/\s\{(\w*)\}(\s|;|)/", " `".$dbprefix."\\1`\\2", $query);
     	return $query;
     }
     
