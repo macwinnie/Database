@@ -130,7 +130,7 @@ class Database{
     			$i=0;
     			foreach($value as $subval){
     				$value[$i] = $this->mysqli->real_escape_string($subval);
-    				if(!is_numeric($value[$i])){
+    				if(!is_int($value[$i])){
     					$value[$i] = "\"".$value[$i]."\"";
     				}
     				$i++;
@@ -138,11 +138,11 @@ class Database{
     			$value = implode(", ", $value);
     		}else{
     			$value = $this->mysqli->real_escape_string($value);
-    			if(!is_numeric($value)){
+    			if(!is_int($value)){
     				$value = "\"".$value."\"";
     			}
     		}
-    		$query = preg_replace('#' . $key . '\b#', $value, $query);
+    		$query = preg_replace('#'.$key.'\b#', $value, $query);
     	}
     	$query = preg_replace("/\s\{(\w*)\}(\s|;|)/", " `".YPANEL_PREFIX."\\1`\\2", $query);
     	return $query;
