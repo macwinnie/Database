@@ -52,7 +52,7 @@ class Database{
 	}
 	
 	public function query_scalar($query, $params = array()){
-        $row = $this->query_row($query, $params);
+        $row = $this->query_row($query, $params, false);
         if($row === false){
             return false;
         }else{
@@ -62,9 +62,7 @@ class Database{
 	
 	public function query_row($query, $params = array(), $assoc = true){
 		$sql = $this->prepare_query($query, $params);
-	    if($result !== false){
-	        return $result;
-	    }elseif($result == false && $result = $this->mysqli->query($sql)){
+	    if($result = $this->mysqli->query($sql)){
 	        $this->errno = null;
 	        $this->error = null;
 	        if ($assoc) {
