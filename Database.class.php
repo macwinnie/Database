@@ -13,22 +13,15 @@ class Database{
 	public function __construct($host=NULL, $database=NULL, $user=NULL, $pass=NULL, $prefix=NULL){
         $this->hostname = php_uname('n');
 	    @$this->mysqli = new mysqli($host, $user, $pass, $database);
-	    if(!@$this->mysqli->stat()){
-			echo json_encode(array("data" => array("errno" => $this->mysqli->connect_errno, "error" => $this->mysqli->connect_error), "error" => 2));
-			$this->connect_errno = null;
-			$this->connect_error = $this->mysqli->connect_error;
-			exit;
-		}
-		if ($this->mysqli->connect_errno || !$this->mysqli) {
-            echo json_encode(array("data" => array("errno" => $this->mysqli->connect_errno, "error" => $this->mysqli->connect_error), "error" => 2));
+	    if(!@$this->mysqli->stat() || $this->mysqli->connect_errno || !$this->mysqli){
             $this->connect_errno = $this->mysqli->connect_errno;
             $this->connect_error = $this->mysqli->connect_error;
-            exit;
+			return;
         }
 		$this->connect_errno = null;
 		$this->connect_error = null;
 		$this->prefix = $prefix;
-		return true;
+		return;
 	}
 	
 	public function query($query, $params = array()){
