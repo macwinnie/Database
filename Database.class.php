@@ -128,8 +128,9 @@ class Database{
 				if($value === null){
 					$value = "NULL";
 				}
+
+				if(!is_int($value) && $value !== "NULL"){
 				$value = $this->mysqli->real_escape_string($value);
-				if(!is_int($value) && $value !== null){
 					$value = "\"".$value."\"";
 				}
 			}
