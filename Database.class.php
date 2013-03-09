@@ -125,8 +125,11 @@ class Database{
 				}
 				$value = implode(", ", $value);
 			}else{
+				if($value === null){
+					$value = "NULL";
+				}
 				$value = $this->mysqli->real_escape_string($value);
-				if(!is_int($value)){
+				if(!is_int($value) && $value !== null){
 					$value = "\"".$value."\"";
 				}
 			}
