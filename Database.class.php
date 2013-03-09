@@ -109,7 +109,7 @@ class Database{
 	    return $this->connect_error;
 	}
 	
-	private function prepare_query($query, $params){
+	public function prepare_query($query, $params){
 		if(substr(trim($query), -1) != ";"){
     		$query .= ";";
     	}
