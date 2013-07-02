@@ -85,6 +85,18 @@ class Database {
     }
   }
 
+  public function start_transaction() {
+    $this->mysqli->query("START TRANSACTION;");
+  }
+
+  public function commit_transaction() {
+    $this->mysqli->query("COMMIT;");
+  }
+
+  public function rollback_transaction() {
+    $this->mysqli->query("ROLLBACK;");
+  }
+
   public function geterrno() {
     return $this->errno;
   }
