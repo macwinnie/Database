@@ -114,7 +114,7 @@ class Database{
 	 */
 	public function execute($query, $params = array()){
 	    $sql = $this->prepare_query($query, $params);
-	    if ($this->mysqli->query($sql)) {
+	    if ($this->mysqli->multi_query($sql)) {
 	        $this->errno = null;
 	        $this->error = null;
 	        return true;
