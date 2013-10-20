@@ -271,6 +271,8 @@ class Database{
 	 * @param void
 	 */
 	public function __destruct(){
-	    $this->mysqli->close();
+		if (!$this->getconnerrno()) {
+		    $this->mysqli->close();
+		}
 	}
 }
