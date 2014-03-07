@@ -275,4 +275,21 @@ class Database{
 		    $this->mysqli->close();
 		}
 	}
+	
+	/**
+	 * function for fetching ENUM-Possibilities of field
+	 *
+	 * @param $table name of table without prefixes
+	 * @param $field name of the field to be requested
+	 */
+	public function getEnumValues( $table, $field ) {
+		$sql = "SHOW COLUMNS FROM {".$table."} WHERE Field = '".$field."'";
+	    $result = $this->query_row( $sql );
+	    $type = $result['Type'];
+	    preg_match('/^enum\((.*)\)$/', $type, $matches);
+	    foreach( explode(',', $matches[1]) as $value ) {
+	         $enum[] = trim( $value, "'" );
+	    }
+	    return $enum;
+	}
 }
