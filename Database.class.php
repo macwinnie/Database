@@ -292,4 +292,58 @@ class Database{
 	    }
 	    return $enum;
 	}
+	
+	/**
+	 * Starts a transaction
+	 *
+	 * @param void
+	 */
+	public function begin_transaction() {
+		$this->mysqli->begin_transaction($args = func_get_args());
+	}
+
+	/**
+	 * Turns on or off auto-committing database modifications
+	 *
+	 * @param boolean $mode
+	 */
+	public function autocommit ($mode=true) {
+		$this->mysqli->autocommit($mode);
+	}
+
+	/**
+	 * Commits the current transaction
+	 *
+	 * @param void
+	 */
+	public function commit () {
+		$this->mysqli->commit($args = func_get_args());
+	}
+
+	/**
+	 * Rolls back current transaction
+	 *
+	 * @param void
+	 */
+	public function rollback () {
+		$this->mysqli->rollback($args = func_get_args());
+	}
+
+	/**
+	 * Set a named transaction savepoint
+	 *
+	 * @param string $name
+	 */
+	public function savepoint ($name) {
+		$this->mysqli->savepoint($name);
+	}
+
+	/**
+	 * Rolls back a transaction to the named savepoint
+	 *
+	 * @param string $name
+	 */
+	public function release_savepoint ($name) {
+		$this->mysqli->release_savepoint($name);
+	}
 }
