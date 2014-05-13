@@ -363,4 +363,30 @@ class Database{
 	public function release_savepoint ($name) {
 		$this->mysqli->release_savepoint($name);
 	}
+
+	/**
+	 * Describe this Database
+	 *
+	 * @param void
+	 * @return String[] description of actual Database
+	 */
+	public function describe () {
+		$sql = 'SHOW TABLES';
+		$dbt = $this->query($sql);
+		if ($dbt!=null and !empty($dbt)) {
+			foreach ($dbt as $table) {
+				if (!isset($tn)) {
+					if (count($table) != 1) {
+						throw new \Exception("attribute-count failed");
+					}
+					foreach ($table as $key => $value) {
+						$tn = $key;
+					}
+				}
+				$sql = 'DESCRIBE `'.$table[$tn].'`';
+				$describe[$table[$tn]] = $this->query($sql);
+			}
+			return $describe;
+		}
+	}
 }
