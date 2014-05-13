@@ -292,14 +292,31 @@ class Database{
 	    }
 	    return $enum;
 	}
-	
+
 	/**
 	 * Starts a transaction
 	 *
 	 * @param void
 	 */
 	public function begin_transaction() {
-		$this->mysqli->begin_transaction($args = func_get_args());
+		if (method_exists($this->mysqli, 'begin_transaction')) {
+			$this->mysqli->begin_transaction();
+		}
+		else {
+			$this->autocommit(false);
+		}
+	}
+
+	/**
+	 * Ends a transaction
+	 *
+	 * @param void
+	 */
+	public function end_transaction() {
+		$this->commit();
+		if (!method_exists($this->mysqli, 'begin_transaction')) {
+			$this->autocommit(true);
+		}
 	}
 
 	/**
@@ -317,7 +334,7 @@ class Database{
 	 * @param void
 	 */
 	public function commit () {
-		$this->mysqli->commit($args = func_get_args());
+		$this->mysqli->commit();
 	}
 
 	/**
@@ -326,7 +343,7 @@ class Database{
 	 * @param void
 	 */
 	public function rollback () {
-		$this->mysqli->rollback($args = func_get_args());
+		$this->mysqli->rollback();
 	}
 
 	/**
