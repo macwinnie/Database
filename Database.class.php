@@ -298,7 +298,7 @@ class Database{
 	 *
 	 * @param void
 	 */
-	public function begin_transaction() {
+	public function begin_transaction () {
 		if (method_exists($this->mysqli, 'begin_transaction')) {
 			$this->mysqli->begin_transaction();
 		}
@@ -312,8 +312,7 @@ class Database{
 	 *
 	 * @param void
 	 */
-	public function end_transaction() {
-		$this->commit();
+	private function finish_transaction () {
 		if (!method_exists($this->mysqli, 'begin_transaction')) {
 			$this->autocommit(true);
 		}
@@ -335,6 +334,7 @@ class Database{
 	 */
 	public function commit () {
 		$this->mysqli->commit();
+		$this->finish_transaction();
 	}
 
 	/**
@@ -344,6 +344,7 @@ class Database{
 	 */
 	public function rollback () {
 		$this->mysqli->rollback();
+		$this->finish_transaction();
 	}
 
 	/**
