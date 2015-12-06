@@ -1,393 +1,486 @@
 <?php
-class Database{
-	private $mysqli;
-	private $connect_errno;
-	private $connect_error;
-	private $errno;
-	private $error;
-	private $count;
-	private $prefix;
-	private $hostname;
-	private $lastQuery;
+
+namespace Database;
+use \Database\DatabaseException as Exception;
+use \PDO;
+
+/**
+ * class for MySQL-Connections via PDO
+ *
+ * @param String        $prefix           table prefix
+ * @param PDO           $connection       DB connection for class instance
+ * @param String[]      $exceptions       occured errors
+ * @param PDOStatement  $statement        statement for query-functions
+ * @param Integer       $queryCount       how many resulting rows did the query have?
+ * @param Integer       $fieldCount       how many fields does the query result have?
+ */
+class Database {
+
+	private $prefix          = '';
+	private $connection      = null;
+	private $exceptions      = array();
+	private $statement       = null;
+	private $queryCount      = null;
+	private $fieldCount      = null;
 
 	/**
-	 * connects to database
+	 * setup database connection
 	 * 
-	 * @param host string databaseserver hostname
-	 * @param database string name of database to be used
-	 * @param user string user connecting to the database
-	 * @param pass string password for user
-	 * @param prefix string tableprefix
+	 * @param String $host     DB host
+	 * @param String $database DB database
+	 * @param String $user     DB user
+	 * @param String $pass     DB user password
+	 * @param String $prefix   table prefix
 	 */
-	public function __construct($host=NULL, $database=NULL, $user=NULL, $pass=NULL, $prefix=NULL){
-        $this->hostname = php_uname('n');
-	    @$this->mysqli = new mysqli($host, $user, $pass, $database);
-	    if(!@$this->mysqli->stat() || $this->mysqli->connect_errno || !$this->mysqli){
-            $this->connect_errno = $this->mysqli->connect_errno;
-            $this->connect_error = $this->mysqli->connect_error;
-			return;
-        }
-		$this->connect_errno = null;
-		$this->connect_error = null;
-		$this->prefix = $prefix;
+	public function __construct($host=NULL, $database=NULL, $user=NULL, $pass=NULL, $prefix=NULL) {
+		if (PHP_VERSION_ID < 50100) {
+			// PDO only defined with PHP > 5.1.0
+			throw new Exception('actually PHP-Version '.PHP_VERSION.' is too low &ndash; 5.1.0 at least needed for using PDO', 1);
+		}
+	    $this->prefix = $prefix;
+	    $dsn = 'mysql:host=' . $host . ';dbname=' . $database;
+	    $options = array (
+	    	// make connections persistent
+			PDO::ATTR_PERSISTENT => true,
+			// throw exceptions if an error occurs
+			PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
+		);
+		try {
+			// setup connection to database / create new PDO instance
+			$this->connection = new PDO($dsn, $user, $pass, $options);
+		} catch (PDOException $e) {
+			// catch and store any errors
+			$this->setException($e->getMessage());
+			throw new Exception ($e->getMessage(), 2);
+		}
 	}
-	
-	/**
-	 * executes datafetching SQL-Query
-	 * 
-	 * @param query string SQL-Query to be executed
-	 * @param params array Array of parameters to be inserted into the SQL-Query
-	 *
-	 * @return bool|array Returns the Query-Result
-	 */
-	public function query($query, $params = array()){
-	    $sql = $this->prepare_query($query, $params);
-	    $result = $this->mysqli->query($sql);
-	    if (!is_null($result) && $this->mysqli->errno == 0) {
-	        $this->errno = null;
-	        $this->error = null;
-	        $data_arr = array();
-	        $this->count = $result->num_rows;
-	        while ($row = $result->fetch_assoc()) {
-	            $data_arr[] = $row;
-	        }
-	        $result->close();
-	        return $data_arr;
-	    } else {
-	        $this->errno = $this->mysqli->errno;
-	        $this->error = $this->mysqli->error;
-	        return false;
-	    }
-	}
-	/**
-	 * executes datafetching SQL-Query
-	 * 
-	 * @param query string SQL-Query to be executed
-	 * @param params array Array of parameters to be inserted into the SQL-Query
-	 *
-	 * @return mixed returns the one single value of SQL-Query
-	 */
-	public function query_scalar($query, $params = array()){
-        $row = $this->query_row($query, $params, false);
-        if($row === false){
-            return false;
-        }else{
-            return $row[0];
-        }
-    }
 
 	/**
-	 * executes datafetching SQL-Query
+	 * bind an value to the statement
 	 * 
-	 * @param query string SQL-Query to be executed
-	 * @param params array Array of parameters to be inserted into the SQL-Query
-	 *
-	 * @return bool|array Returns one line / one Object as result of SQL-Query
+	 * @param  String $param  string used as placeholder within statement
+	 * @param  mixed  $value  value to insert into database
+	 * @param  String $type   type 
+	 * @return void
 	 */
-	public function query_row($query, $params = array(), $assoc = true){
-		$sql = $this->prepare_query($query, $params);
-	    if($result = $this->mysqli->query($sql)){
-	        $this->errno = null;
-	        $this->error = null;
-	        if ($assoc) {
-	            $row = $result->fetch_assoc();
-	        }
-	        else {
-		        $row = $result->fetch_array();
-	        }
-	        $result->close();
-	        return $row;
-	    }else{
-	        $this->errno = $this->mysqli->errno;
-	        $this->error = $this->mysqli->error;
-	        return false;
-	    }
-	}
-	
-	/**
-	 * executes SQL-Query without fetching data
-	 * 
-	 * @param query string SQL-Query to be executed
-	 * @param params array Array of parameters to be inserted into the SQL-Query
-	 *
-	 * @return bool returns success of SQL-Query
-	 */
-	public function execute($query, $params = array()){
-	    $sql = $this->prepare_query($query, $params);
-	    if ($this->mysqli->multi_query($sql)) {
-	        $this->errno = null;
-	        $this->error = null;
-	        return true;
-	    } else {
-	        $this->errno = $this->mysqli->errno;
-	        $this->error = $this->mysqli->error;
-	        return false;
-	    }
-	}
-	
-	/**
-	 * get the number of last SQL-Error
-	 * 
-	 * @param void
-	 * @return integer returns the number of last SQL-Error
-	 */
-	public function geterrno(){
-	    return $this->errno;
-	}
-	
-	/**
-	 * get the description of the last SQL-Error
-	 * 
-	 * @param void
-	 * @return string returns the description of the last SQL-Error
-	 */
-	public function geterror(){
-	    return $this->error;
-	}
-	
-	/**
-	 * get the number of last Connection-Error
-	 * 
-	 * @param void
-	 * @return integer returns the number of last Connection-Error
-	 */
-	public function getconnerrno(){
-	    return $this->connect_errno;
-	}
-	
-	/**
-	 * get the description of the last Connection-Error
-	 * 
-	 * @param void
-	 * @return string returns the description of the last Connection-Error
-	 */
-	public function getconnerror(){
-	    return $this->connect_error;
-	}
-	
-	/**
-	 * replaces placeholders within SQL-Queries with escaped values
-	 * 
-	 * @param query string SQL-Query to be executed
-	 * @param params array Array of parameters to be inserted into the SQL-Query
-	 *
-	 * @return string returns the SQL-Query with inserted Params
-	 */
-	public function prepare_query($query, $params){
-		if(substr(trim($query), -1) != ";"){
-    		$query .= ";";
-    	}
-		foreach ($params as $key => $value) {
-			if (is_array($value)) {
-				$i=0;
-				foreach ($value as $subval) {
-					$value[$i] = $this->mysqli->real_escape_string($subval);
-					if(!is_int($value[$i])){
-						$value[$i] = "\"".$value[$i]."\"";
-					}
-					$i++;
-				}
-				$value = implode(", ", $value);
-			} else {
-				if ($value === null) {
-					$value = "NULL";
-				}
-
-				if (!is_int($value) && $value !== "NULL") {
-					$value = $this->mysqli->real_escape_string($value);
-					$value = "\"".$value."\"";
-				}
+	public function bind ($param, $value, $type = null) {
+		if (
+			// check if no type is given
+			is_null($type)
+			or
+			// check if given type is one of the relevant value types
+			!in_array(
+				$type, 
+				array(
+					PDO::PARAM_NULL,
+					PDO::PARAM_INT,
+					PDO::PARAM_BOOL,
+					PDO::PARAM_STR,
+					PDO::PARAM_LOB,
+					PDO::PARAM_STMT,
+				)
+			)
+		) {
+			// check parameter for type
+			switch (true) {
+				case is_null($value): // NULL
+					$type = PDO::PARAM_NULL;
+					break;
+				case is_int($value): // Integer
+					$type = PDO::PARAM_INT;
+					break;
+				case is_bool($value): // Boolean
+					$type = PDO::PARAM_BOOL;
+					break;
+				default: // String
+					$type = PDO::PARAM_STR;
+					break;
 			}
-			$query = preg_replace('#' . $key . '\b#', $value, $query);
 		}
-		$query = preg_replace("/\s\{(\w*)\}(\s|;|)/", " `".$this->prefix."\\1`\\2", $query);
-		$this->lastQuery = $query;
-		return $query;
-	}
-	
-	/**
-	 * get information about MySQL-Connection
-	 * 
-	 * @param void
-	 * @return array returns information about MySQL-Connection
-	 */
-	public function getinfo(){
-        return array("server" => array("stat" => $this->mysqli->stat, "version" => $this->mysqli->server_info, "info" => $this->mysqli->host_info, "thread_id" => $this->mysqli->thread_id), "connection" => array("sqlstate" => $this->mysqli->sqlstate, "protocol_versoin" => $this->mysqli->protocol_version), "client" => array("version" => $this->mysqli->client_version, "info" => $this->mysqli->client_info));
-    }
-	
-	/**
-	 * get the primary key of last inserted value (primary key has to be AI)
-	 * 
-	 * @param void
-	 * @return integer returns the primary key oflast inserted value
-	 */
-	public function getlastid() {
-	    return $this->mysqli->insert_id;
-	}
-	
-	/**
-	 * get the number of Query-Results
-	 * 
-	 * @param void
-	 * @return integer returns the number of Query-Results
-	 */
-	public function getcount() {
-	    return $this->count;
-	}
-	
-	/**
-	 * get the number of affected rows
-	 * 
-	 * @param void
-	 * @return integer returns the number of affected rows
-	 */
-	public function getaffectedrows(){
-        return $this->mysqli->affected_rows;
-    }
-	
-	/**
-	 * get the number of columns for the most recent query
-	 * 
-	 * @param void
-	 * @return integer returns the number of columns for the most recent query
-	 */
-	public function getfieldcount() {
-	    return $this->mysqli->field_count;
-	}
-	
-	/**
-	 * get the most recent executed query
-	 * 
-	 * @param void
-	 * @return string returns the most recent executed query
-	 */
-	public function getLastQuery() {
-		return $this->lastQuery;
-	}
-	
-	/**
-	 * blast the database-connection
-	 * 
-	 * @param void
-	 */
-	public function __destruct(){
-		if (!$this->getconnerrno()) {
-		    $this->mysqli->close();
-		}
-	}
-	
-	/**
-	 * function for fetching ENUM-Possibilities of field
-	 *
-	 * @param $table name of table without prefixes
-	 * @param $field name of the field to be requested
-	 */
-	public function getEnumValues( $table, $field ) {
-		$sql = "SHOW COLUMNS FROM {".$table."} WHERE Field = '".$field."'";
-	    $result = $this->query_row( $sql );
-	    $type = $result['Type'];
-	    preg_match('/^enum\((.*)\)$/', $type, $matches);
-	    foreach( explode(',', $matches[1]) as $value ) {
-	         $enum[] = trim( $value, "'" );
-	    }
-	    return $enum;
-	}
-
-	/**
-	 * Starts a transaction
-	 *
-	 * @param void
-	 */
-	public function begin_transaction () {
-		if (method_exists($this->mysqli, 'begin_transaction')) {
-			$this->mysqli->begin_transaction();
+		// check if statement is a PDOStatement, so parameters can be bound
+		if (is_a($this->statement, 'PDOStatement')) {
+			// bind value to statement
+			$this->statement->bindValue($param, $value, $type);
 		}
 		else {
-			$this->autocommit(false);
+			// statement is no valid PDOStatement
+			throw new Exception('no valid statement set to bind parameters', 3);
 		}
 	}
 
 	/**
-	 * Ends a transaction
-	 *
-	 * @param void
+	 * prepare a query with the PDO-Class to be a PDOStatement
+	 * 
+	 * @param  String  $query  query to be prepared
+	 * @return void
 	 */
-	private function finish_transaction () {
-		if (!method_exists($this->mysqli, 'begin_transaction')) {
-			$this->autocommit(true);
+	private function prepareQuery ($query) {
+		// RegEx: {tableName} will be replaced by `prefix_tableName`
+		$query = preg_replace ( '/\s\{(\w*)\}(\s|;|)/', ' `' . $this->prefix . "\\1`\\2", $query);
+		// finally prepare as PDOStatement
+		$this->statement = $this->connection->prepare($query);
+	}
+
+	/**
+	 * bind given array of parameters to statement
+	 * 
+	 * @param  array[]  $params  array with entrys  param => value
+	 * @return void
+	 */
+	private function bindParams ($params = array()) {
+		if (!is_null($params) and !empty($params)) {
+			$keys = array_keys($params, null, true);
+			if (is_array($keys) and !empty($keys)) {
+				// prepare query so NULL is no more a problem ...
+				$query = $this->statement->queryString;
+				foreach ($keys as $key) {
+					$query = preg_replace('#=\s*?' . $key . '\b#', 'IS NULL', $query);
+				}
+				$this->statement = $this->connection->prepare($query);
+			}
+			foreach ($params as $param => $value) {
+				try {
+					// try to bind the value to param within statement
+					$this->bind($param, $value);
+				} catch (Exception $e) {
+					// statement not propperly set, so it is reset to null
+					$this->setException($e->getMessage());
+					$this->statement = null;
+					throw $e;
+				}
+			}
 		}
 	}
 
 	/**
-	 * Turns on or off auto-committing database modifications
-	 *
-	 * @param boolean $mode
+	 * check for valid fetchStyle
+	 * @param  mixde  &$fetchStyle  Boolean: return result as object?
+	 *                              PDO::FETCH_* for using special fetch-method
+	 * @return void
 	 */
-	public function autocommit ($mode=true) {
-		$this->mysqli->autocommit($mode);
+	private function checkFetchStyle (&$fetchStyle) {
+		// if $fetchStyle is boolean 
+		if (is_bool($fetchStyle)) {
+			$fetchStyle = ($fetchStyle) ? PDO::FETCH_OBJ : PDO::FETCH_ASSOC;
+		}
+		// check if given fetchStyle is a valid one
+		elseif (
+			!in_array(
+				$fetchStyle,
+				array(
+					PDO::FETCH_OBJ,
+					PDO::FETCH_CLASS,
+					PDO::FETCH_COLUMN,
+					PDO::FETCH_BOUND,
+					PDO::FETCH_BOTH,
+					PDO::FETCH_NUM,
+					PDO::FETCH_NAMED,
+					PDO::FETCH_ASSOC,
+				)
+			)
+		) {
+			$fetchStyle = PDO::FETCH_ASSOC;
+		}
 	}
 
 	/**
-	 * Commits the current transaction
-	 *
-	 * @param void
+	 * fetch the errors occured until the execution
+	 * 
+	 * @param  Boolean   $reset  if true, the array of errors will be reset
+	 * @return String[]          array of error-messages
 	 */
-	public function commit () {
-		$this->mysqli->commit();
-		$this->finish_transaction();
+	public function fetchErrors ($reset = false) {
+		$return = $this->exceptions;
+		if ($reset) {
+			$this->exceptions = array();
+		}
+		return $return;
+	}
+
+	private function setException ($errorMsg) {
+		$this->exceptions[] = $errorMsg;
 	}
 
 	/**
-	 * Rolls back current transaction
+	 * execute the current statement or place and execute an DELETE, UPDATE or INSERT statement
 	 *
-	 * @param void
+	 * @param  String  $query   query that should be executed
+	 * @param  mixed   $params  params array to be bound at PDOStatement – param => value
+	 * 
+	 * @return Boolean          true on success, false on failure
 	 */
-	public function rollback () {
-		$this->mysqli->rollback();
-		$this->finish_transaction();
+	public function execute ($query = null, $params = null) {
+		if ($query !== null) {
+			$this->prepareQuery($query);
+			$this->bindParams($params);
+		}
+		if (is_a($this->statement, 'PDOStatement')) {
+			try {
+				$return = $this->statement->execute();
+			} catch (PDOException $e) {
+				$this->setException($e->getMessage());
+				throw new Exception($e->getMessage(), 4);
+			}
+		}
+		else {
+			throw new Exception('no valid statement set to execute', 5);
+		}
+		return $return;
 	}
 
 	/**
-	 * Set a named transaction savepoint
+	 * function for bundeling procedures used by all query-functions
+	 * 
+	 * @param String   $query        query that should be executed
+	 * @param mixed    $params       params array to be bound at PDOStatement – param => value
+	 * @param mixed    &$fetchStyle  Boolean: return result as object?
+	 *                               PDO::FETCH_* for using special fetch-method
 	 *
-	 * @param string $name
+	 * @return void
 	 */
-	public function savepoint ($name) {
-		$this->mysqli->savepoint($name);
+	private function preQuery ($query, $params = array(), &$fetchStyle) {
+		$this->prepareQuery($query);
+		$this->bindParams($params);
+		$this->checkFetchStyle($fetchStyle);
+		try {
+			$this->execute();
+		} catch (PDOException $e) {
+			$this->setException($e->getMessage());
+			throw $e;
+		}
 	}
 
 	/**
-	 * Rolls back a transaction to the named savepoint
+	 * executes query for fetching multiple rows of datasets
+	 * 
+	 * @param String   $query       query that should be executed
+	 * @param mixed    $params      params array to be bound at PDOStatement – param => value
+	 * @param mixed    $fetchStyle  Boolean: return result as object?
+	 *                              PDO::FETCH_* for using special fetch-method
 	 *
-	 * @param string $name
+	 * @return mixed 				result of query – using fetchStyle
 	 */
-	public function release_savepoint ($name) {
-		$this->mysqli->release_savepoint($name);
+	public function query ($query, $params = array(), $fetchStyle = false) {
+		try {
+			$this->preQuery($query, $params, $fetchStyle);
+			$return = $this->statement->fetchAll($fetchStyle);
+			$this->queryCount = count($return);
+			$this->fieldCount = count(reset($return));
+			return $return;
+		} catch (PDOException $e) {
+			$this->setException($e->getMessage());
+		}
 	}
 
 	/**
-	 * Describe this Database
+	 * executes query for fetching one single row with one dataset
+	 * 
+	 * @param String   $query       query that should be executed
+	 * @param mixed    $params      params array to be bound at PDOStatement – param => value
+	 * @param mixed    $fetchStyle  Boolean: return result as object?
+	 *                              PDO::FETCH_* for using special fetch-method
 	 *
-	 * @param void
+	 * @return mixed 				result of query – using fetchStyle
+	 */
+	public function queryRow ($query, $params = array(), $fetchStyle = false) {
+		try {
+			$this->preQuery($query, $params, $fetchStyle);
+			$return = $this->statement->fetch($fetchStyle);
+			$this->fieldCount = count($return);
+			return $return;
+		} catch (PDOException $e) {
+			$this->setException($e->getMessage());
+		}
+	}
+
+	/**
+	 * executes query for fetching the first value out of one single dataset
+	 * 
+	 * @param String   $query       query that should be executed
+	 * @param mixed    $params      params array to be bound at PDOStatement – param => value
+	 *
+	 * @return mixed 				result of query – using fetchStyle
+	 */
+	public function queryScalar ($query, $params = array()) {
+		$row = $this->query_row($query, $params, PDO::FETCH_NUM);
+		$this->fieldCount = 1;
+		return $row[0];
+	}
+
+	/**
+	 * get the code of the error of last action with PDOStatement
+	 * 
+	 * @return Integer  returns the number of last SQL-Error
+	 */
+	public function getErrno() {
+	    return $this->statement->errorCode();
+	}
+	
+	/**
+	 * get the code of the error of last action with PDOStatement
+	 * 
+	 * @return String   returns the description
+	 */
+	public function getError() {
+	    return $this->statement->errorInfo();
+	}
+
+	/**
+	 * fetch the ID of last inserted value
+	 * 
+	 * @return mixed   regularly Integer
+	 */
+	public function lastInsertId () {
+		return $this->connection->lastInsertId();
+	}
+
+	/**
+	 * Count affected rows
+	 * Use only for DELETE, UPDATE or INSERT statements!
+	 * Don't use for counting query_results!
+	 * 
+	 * @return Integer
+	 */
+	public function rowCount(){
+		return $this->statement->rowCount();
+	}
+
+	/**
+	 * get number of returned datasets of last statement
+	 * 
+	 * @return Integer
+	 */
+	public function getCount () {
+		if (!is_a($this->statement, 'PDOStatement') or $this->queryCount === null) {
+			throw new Exception('no valid PDOStatement or query results not counted', 6);
+		}
+		return $this->queryCount;
+	}
+
+	/**
+	 * get the number of fields of previously ran query
+	 * 
+	 * @return Integer
+	 */
+	public function getFieldCount () {
+		if (!is_a($this->statement, 'PDOStatement') or $this->fieldCount === null) {
+			throw new Exception('no valid PDOStatement or query results not counted', 7);
+		}
+		return $this->fieldCount;
+	}
+
+	/**
+	 * begin a transaction
+	 * 
+	 * @return Boolean  true on success, false on failure
+	 */
+	public function beginTransaction () {
+		return $this->connection->beginTransaction();
+	}
+
+	/**
+	 * end a transaction
+	 * 
+	 * @return Boolean  true on success, false on failure
+	 */
+	public function endTransaction () {
+		return $this->connection->commit();
+	}
+
+	/**
+	 * rollback a transaction
+	 * 
+	 * @return Boolean  true on success, false on failure
+	 */
+	public function rollBack () {
+		return $this->connection->rollBack();
+	}
+
+	/**
+	 * return all debug-information of PDOStatement
+	 * 
+	 * @return String
+	 */
+	public function debugDumpParams () {
+		ob_start();
+		$this->statement->debugDumpParams();
+		$debug = ob_get_contents();
+		ob_end_clean();
+		return $debug; 
+	}
+
+	/**
+	 * Describe current Database
+	 *
 	 * @return String[] description of actual Database
 	 */
 	public function describe () {
-		$sql = 'SHOW TABLES';
-		$dbt = $this->query($sql);
-		if ($dbt!=null and !empty($dbt)) {
-			foreach ($dbt as $table) {
-				if (!isset($tn)) {
-					if (count($table) != 1) {
-						throw new \Exception("attribute-count failed");
-					}
-					foreach ($table as $key => $value) {
-						$tn = $key;
-					}
+		$query1 = 'SHOW TABLES';
+		$DBtables = $this->query($query1);
+		if ($DBtables!=null and !empty($DBtables)) {
+			foreach ($DBtables as $table) {
+				if (count($table) != 1) {
+					throw new Exception('attribute-count while description failed', 8);
 				}
-				$sql = 'DESCRIBE `'.$table[$tn].'`';
-				$describe[$table[$tn]] = $this->query($sql);
+				foreach ($table as $key => $value) {
+					$tn = $key;
+				}
+				$query2 = 'DESCRIBE `'.$table[$tn].'`';
+				$describe[$table[$tn]] = $this->query($query2);
 			}
 			return $describe;
 		}
+		else {
+			throw new Exception('no tables to descirbe', 9);
+		}
+	}
+
+	/**
+	 * alias for backwardscompatibility
+	 */
+	public function query_scalar ($query, $params = array()) {
+		return $this->queryScalar($query, $params);
+	}
+
+	/**
+	 * alias for backwardscompatibility
+	 */
+	public function query_row ($query, $params = array(), $fetchStyle = false) {
+		return $this->queryRow($query, $params, $fetchStyle);
+	}
+
+	/**
+	 * alias for backwardscompatibility
+	 */
+	private function prepare_query ($query) {
+		return $this->prepareQuery($query);
+	}
+
+	/**
+	 * alias for backwardscompatibility
+	 */
+	public function begin_transaction () {
+		return $this->beginTransaction();
+	}
+
+	/**
+	 * alias for backwardscompatibility
+	 */
+	public function finish_transaction () {
+		return $this->endTransaction();
+	}
+
+	/**
+	 * alias for backwardscompatibility
+	 */
+	public function commit () {
+		return $this->endTransaction();
+	}
+
+	/**
+	 * alias for backwardscompatibility
+	 */
+	public function getlastid () {
+		return $this->lastInsertId();
 	}
 }
