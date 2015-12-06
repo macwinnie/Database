@@ -483,4 +483,11 @@ class Database {
 	public function getlastid () {
 		return $this->lastInsertId();
 	}
+
+	/**
+	 * alias for backwardscompatibility
+	 */
+	public function getaffectedrows () {
+		return $this->rowCount();
+	}
 }
