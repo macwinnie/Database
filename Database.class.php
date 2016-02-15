@@ -141,8 +141,11 @@ class Database {
 			}
 			foreach ($params as $param => $value) {
 				try {
-					// try to bind the value to param within statement
-					$this->bind($param, $value);
+					// only bind parameter, if used with query!
+					if (strpos($this->statement->queryString, $param) !== false) {
+						// try to bind the value to param within statement
+						$this->bind($param, $value);
+					}
 				} catch (Exception $e) {
 					// statement not propperly set, so it is reset to null
 					$this->setException($e->getMessage());
