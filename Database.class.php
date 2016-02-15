@@ -475,7 +475,7 @@ class Database {
 	/**
 	 * alias for backwardscompatibility
 	 */
-	public function finish_transaction () {
+	public function end_transaction () {
 		return $this->endTransaction();
 	}
 
