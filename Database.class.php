@@ -3,6 +3,7 @@
 namespace Database;
 use \Database\DatabaseException as Exception;
 use \PDO;
+use \PDOException;
 
 /**
  * class for MySQL-Connections via PDO
@@ -219,7 +220,7 @@ class Database {
 				$return = $this->statement->execute();
 			} catch (PDOException $e) {
 				$this->setException($e->getMessage());
-				throw new Exception($e->getMessage(), 4);
+				throw $e;
 			}
 		}
 		else {
@@ -318,11 +319,19 @@ class Database {
 	
 	/**
 	 * get the code of the error of last action with PDOStatement
-	 * 
-	 * @return String   returns the description
+	 *
+	 * @param  boolean $array  should the error be returned as an array?
+	 * @return String          returns the description
 	 */
-	public function getError() {
-	    return $this->statement->errorInfo();
+	public function getError($array = false) {
+		$error = $this->statement->errorInfo();
+		if ($error[0] == '00000') {
+			return null;
+		}
+		if ($array) {
+			return $error;
+		}
+	    return print_r($error, true);
 	}
 
 	/**
