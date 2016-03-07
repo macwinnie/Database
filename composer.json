@@ -8,5 +8,11 @@
             "email": "git@macwinnie.me"
         }
     ],
+    "autoload": {
+        "files": [
+            "DatabaseException.class.php",
+            "Database.class.php"
+        ]
+    }
     "require": {}
 }
