@@ -13,6 +13,6 @@
             "DatabaseException.class.php",
             "Database.class.php"
         ]
-    }
+    },
     "require": {}
 }
