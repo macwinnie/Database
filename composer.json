@@ -1,0 +1,12 @@
+{
+    "name": "macwinnie/database",
+    "description": "MySQL Class based on PDO",
+    "license": "creative commons by-sq 4.0",
+    "authors": [
+        {
+            "name": "Martin Winter",
+            "email": "git@macwinnie.me"
+        }
+    ],
+    "require": {}
+}
