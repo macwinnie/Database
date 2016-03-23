@@ -135,6 +135,7 @@ class Database {
 				// prepare query so NULL is no more a problem ...
 				$query = $this->statement->queryString;
 				foreach ($keys as $key) {
+					$query = preg_replace('#!=\s*?' . $key . '\b#', 'NOT IS NULL', $query);
 					$query = preg_replace('#=\s*?' . $key . '\b#', 'IS NULL', $query);
 				}
 				$this->statement = $this->connection->prepare($query);
