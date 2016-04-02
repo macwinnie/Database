@@ -310,7 +310,7 @@ class Database {
 	 * @param mixed    $params      params array to be bound at PDOStatement – param => value
 	 * @param Integer  $selectcol   number of the column whose value should be selected, 0 default
 	 *
-	 * @return mixed 		result of query – using fetchStyle
+	 * @return mixed 		result of query
 	 */
 	public function queryScalar ($query, $params = array(), $selectcol = 0) {
 		$row = $this->query_row($query, $params, PDO::FETCH_NUM);
@@ -330,6 +330,8 @@ class Database {
 	 * @param String   $query       query that should be executed
 	 * @param mixed    $params      params array to be bound at PDOStatement – param => value
 	 * @param Integer  $selectcol   number of the column whose values should be selected, 0 default
+	 *
+	 * @return mixed 		result of query
 	 */
 	public function queryColumn ($query, $params = array(), $selectcol = 0) {
 		$fetchStyle = false
