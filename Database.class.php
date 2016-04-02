@@ -269,8 +269,10 @@ class Database {
 		try {
 			$this->preQuery($query, $params, $fetchStyle);
 			$return = $this->statement->fetchAll($fetchStyle);
-			$this->queryCount = count($return);
-			$this->fieldCount = count(reset($return));
+			if ($return !== false) {
+				$this->queryCount = count($return);
+				$this->fieldCount = count(reset($return));
+			}
 			return $return;
 		} catch (PDOException $e) {
 			$this->setException($e->getMessage());
@@ -291,7 +293,10 @@ class Database {
 		try {
 			$this->preQuery($query, $params, $fetchStyle);
 			$return = $this->statement->fetch($fetchStyle);
-			$this->fieldCount = count($return);
+			if ($return !== false) {
+				$this->queryCount = 1;
+				$this->fieldCount = count($return);
+			}
 			return $return;
 		} catch (PDOException $e) {
 			$this->setException($e->getMessage());
@@ -303,13 +308,43 @@ class Database {
 	 * 
 	 * @param String   $query       query that should be executed
 	 * @param mixed    $params      params array to be bound at PDOStatement – param => value
+	 * @param Integer  $selectcol   number of the column whose value should be selected, 0 default
 	 *
-	 * @return mixed 				result of query – using fetchStyle
+	 * @return mixed 		result of query – using fetchStyle
 	 */
-	public function queryScalar ($query, $params = array()) {
+	public function queryScalar ($query, $params = array(), $selectcol = 0) {
 		$row = $this->query_row($query, $params, PDO::FETCH_NUM);
+		if (isset($row[$selectcol])) {
+			$return = $row[$selectcol];
+			$this->fieldCount = 1;
+		}
+		else {
+			$this->setException('Column to be selected is not defined');
+		}
+		return $return;
+	}
+	
+	/**
+	 * executes query for fetching one single column out of all selected datasets
+	 * 
+	 * @param String   $query       query that should be executed
+	 * @param mixed    $params      params array to be bound at PDOStatement – param => value
+	 * @param Integer  $selectcol   number of the column whose values should be selected, 0 default
+	 */
+	public function queryColumn ($query, $params = array(), $selectcol = 0) {
+		$fetchStyle = false
+		$all = $this->query($query, $params, PDO::FETCH_NUM);
+		$return = array();
+		foreach ($all as $i => $row) {
+			if (isset($row[$selectcol])) {
+				$return[] = $row[$selectcol];
+			}
+			else {
+				$this->setException('Column to be selected is not defined in row ' . $i);
+			}
+		}
 		$this->fieldCount = 1;
-		return $row[0];
+		return $return;
 	}
 
 	/**
