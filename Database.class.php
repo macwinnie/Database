@@ -334,7 +334,7 @@ class Database {
 	 * @return mixed 		result of query
 	 */
 	public function queryColumn ($query, $params = array(), $selectcol = 0) {
-		$fetchStyle = false
+		$fetchStyle = false;
 		$all = $this->query($query, $params, PDO::FETCH_NUM);
 		$return = array();
 		foreach ($all as $i => $row) {
