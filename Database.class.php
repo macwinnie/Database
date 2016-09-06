@@ -55,6 +55,16 @@ class Database {
 			throw new Exception ($e->getMessage(), 2);
 		}
 	}
+	
+	/**
+	 * fetch the prefix of current database-connection
+	 * 
+	 * @param  void
+	 * @return string prefix
+	 */
+	public function getPrefix () {
+		return $this->prefix;
+	}
 
 	/**
 	 * bind an value to the statement
