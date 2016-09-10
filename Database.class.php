@@ -26,7 +26,7 @@ class Database {
 
 	/**
 	 * setup database connection
-	 * 
+	 *
 	 * @param String $host     DB host
 	 * @param String $database DB database
 	 * @param String $user     DB user
@@ -55,10 +55,10 @@ class Database {
 			throw new Exception ($e->getMessage(), 2);
 		}
 	}
-	
+
 	/**
 	 * fetch the prefix of current database-connection
-	 * 
+	 *
 	 * @param  void
 	 * @return string prefix
 	 */
@@ -71,7 +71,7 @@ class Database {
 	 * 
 	 * @param  String $param  string used as placeholder within statement
 	 * @param  mixed  $value  value to insert into database
-	 * @param  String $type   type 
+	 * @param  String $type   type
 	 * @return void
 	 */
 	public function bind ($param, $value, $type = null) {
@@ -81,7 +81,7 @@ class Database {
 			or
 			// check if given type is one of the relevant value types
 			!in_array(
-				$type, 
+				$type,
 				array(
 					PDO::PARAM_NULL,
 					PDO::PARAM_INT,
@@ -121,11 +121,11 @@ class Database {
 
 	/**
 	 * prepare a query with the PDO-Class to be a PDOStatement
-	 * 
+	 *
 	 * @param  String  $query  query to be prepared
 	 * @return void
 	 */
-	private function prepareQuery ($query) {
+	protected function prepareQuery ($query) {
 		// RegEx: {tableName} will be replaced by `prefix_tableName`
 		$query = preg_replace ( '/\s\{(\w*)\}(\s|;|)/', ' `' . $this->prefix . "\\1`\\2", $query);
 		// finally prepare as PDOStatement
@@ -134,7 +134,7 @@ class Database {
 
 	/**
 	 * bind given array of parameters to statement
-	 * 
+	 *
 	 * @param  array[]  $params  array with entrys  param => value
 	 * @return void
 	 */
@@ -174,7 +174,7 @@ class Database {
 	 * @return void
 	 */
 	private function checkFetchStyle (&$fetchStyle) {
-		// if $fetchStyle is boolean 
+		// if $fetchStyle is boolean
 		if (is_bool($fetchStyle)) {
 			$fetchStyle = ($fetchStyle) ? PDO::FETCH_OBJ : PDO::FETCH_ASSOC;
 		}
@@ -200,7 +200,7 @@ class Database {
 
 	/**
 	 * fetch the errors occured until the execution
-	 * 
+	 *
 	 * @param  Boolean   $reset  if true, the array of errors will be reset
 	 * @return String[]          array of error-messages
 	 */
@@ -221,7 +221,7 @@ class Database {
 	 *
 	 * @param  String  $query   query that should be executed
 	 * @param  mixed   $params  params array to be bound at PDOStatement – param => value
-	 * 
+	 *
 	 * @return Boolean          true on success, false on failure
 	 */
 	public function execute ($query = null, $params = null) {
@@ -245,7 +245,7 @@ class Database {
 
 	/**
 	 * function for bundeling procedures used by all query-functions
-	 * 
+	 *
 	 * @param String   $query        query that should be executed
 	 * @param mixed    $params       params array to be bound at PDOStatement – param => value
 	 * @param mixed    &$fetchStyle  Boolean: return result as object?
@@ -267,7 +267,7 @@ class Database {
 
 	/**
 	 * executes query for fetching multiple rows of datasets
-	 * 
+	 *
 	 * @param String   $query       query that should be executed
 	 * @param mixed    $params      params array to be bound at PDOStatement – param => value
 	 * @param mixed    $fetchStyle  Boolean: return result as object?
@@ -291,7 +291,7 @@ class Database {
 
 	/**
 	 * executes query for fetching one single row with one dataset
-	 * 
+	 *
 	 * @param String   $query       query that should be executed
 	 * @param mixed    $params      params array to be bound at PDOStatement – param => value
 	 * @param mixed    $fetchStyle  Boolean: return result as object?
@@ -315,7 +315,7 @@ class Database {
 
 	/**
 	 * executes query for fetching the first value out of one single dataset
-	 * 
+	 *
 	 * @param String   $query       query that should be executed
 	 * @param mixed    $params      params array to be bound at PDOStatement – param => value
 	 * @param Integer  $selectcol   number of the column whose value should be selected, 0 default
@@ -325,18 +325,18 @@ class Database {
 	public function queryScalar ($query, $params = array(), $selectcol = 0) {
 		$row = $this->query_row($query, $params, PDO::FETCH_NUM);
 		if (isset($row[$selectcol])) {
-			$return = $row[$selectcol];
 			$this->fieldCount = 1;
+			return $row[$selectcol];
 		}
 		else {
 			$this->setException('Column to be selected is not defined');
 		}
 		return $return;
 	}
-	
+
 	/**
 	 * executes query for fetching one single column out of all selected datasets
-	 * 
+	 *
 	 * @param String   $query       query that should be executed
 	 * @param mixed    $params      params array to be bound at PDOStatement – param => value
 	 * @param Integer  $selectcol   number of the column whose values should be selected, 0 default
@@ -347,6 +347,7 @@ class Database {
 		$fetchStyle = false;
 		$all = $this->query($query, $params, PDO::FETCH_NUM);
 		$return = array();
+		$this->fieldCount = 1;
 		foreach ($all as $i => $row) {
 			if (isset($row[$selectcol])) {
 				$return[] = $row[$selectcol];
@@ -355,19 +356,18 @@ class Database {
 				$this->setException('Column to be selected is not defined in row ' . $i);
 			}
 		}
-		$this->fieldCount = 1;
 		return $return;
 	}
 
 	/**
 	 * get the code of the error of last action with PDOStatement
-	 * 
+	 *
 	 * @return Integer  returns the number of last SQL-Error
 	 */
 	public function getErrno() {
 	    return $this->statement->errorCode();
 	}
-	
+
 	/**
 	 * get the code of the error of last action with PDOStatement
 	 *
@@ -387,7 +387,7 @@ class Database {
 
 	/**
 	 * fetch the ID of last inserted value
-	 * 
+	 *
 	 * @return mixed   regularly Integer
 	 */
 	public function lastInsertId () {
@@ -398,7 +398,7 @@ class Database {
 	 * Count affected rows
 	 * Use only for DELETE, UPDATE or INSERT statements!
 	 * Don't use for counting query_results!
-	 * 
+	 *
 	 * @return Integer
 	 */
 	public function rowCount(){
@@ -407,7 +407,7 @@ class Database {
 
 	/**
 	 * get number of returned datasets of last statement
-	 * 
+	 *
 	 * @return Integer
 	 */
 	public function getCount () {
@@ -419,7 +419,7 @@ class Database {
 
 	/**
 	 * get the number of fields of previously ran query
-	 * 
+	 *
 	 * @return Integer
 	 */
 	public function getFieldCount () {
@@ -431,7 +431,7 @@ class Database {
 
 	/**
 	 * begin a transaction
-	 * 
+	 *
 	 * @return Boolean  true on success, false on failure
 	 */
 	public function beginTransaction () {
@@ -440,7 +440,7 @@ class Database {
 
 	/**
 	 * end a transaction
-	 * 
+	 *
 	 * @return Boolean  true on success, false on failure
 	 */
 	public function endTransaction () {
@@ -449,7 +449,7 @@ class Database {
 
 	/**
 	 * rollback a transaction
-	 * 
+	 *
 	 * @return Boolean  true on success, false on failure
 	 */
 	public function rollBack () {
@@ -458,7 +458,7 @@ class Database {
 
 	/**
 	 * return all debug-information of PDOStatement
-	 * 
+	 *
 	 * @return String
 	 */
 	public function debugDumpParams () {
@@ -466,7 +466,7 @@ class Database {
 		$this->statement->debugDumpParams();
 		$debug = ob_get_contents();
 		ob_end_clean();
-		return $debug; 
+		return $debug;
 	}
 
 	/**
