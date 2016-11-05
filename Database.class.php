@@ -27,19 +27,23 @@ class Database {
 	/**
 	 * setup database connection
 	 *
-	 * @param String $host     DB host
-	 * @param String $database DB database
-	 * @param String $user     DB user
-	 * @param String $pass     DB user password
-	 * @param String $prefix   table prefix
+	 * @param String  $host     DB host
+	 * @param Integer $port     DB port
+	 * @param String  $database DB database
+	 * @param String  $user     DB user
+	 * @param String  $pass     DB user password
+	 * @param String  $prefix   table prefix
 	 */
-	public function __construct($host=NULL, $database=NULL, $user=NULL, $pass=NULL, $prefix=NULL) {
+	public function __construct($host=NULL, $database=NULL, $user=NULL, $pass=NULL, $prefix=NULL, $port=NULL) {
 		if (PHP_VERSION_ID < 50100) {
 			// PDO only defined with PHP > 5.1.0
 			throw new Exception('actually PHP-Version '.PHP_VERSION.' is too low &ndash; 5.1.0 at least needed for using PDO', 1);
 		}
 	    $this->prefix = $prefix;
 	    $dsn = 'mysql:host=' . $host . ';dbname=' . $database;
+	    if ($port != NULL) {
+		$dsn .= ';port=' . $port;
+	    }
 	    $options = array (
 	    	// make connections persistent
 			PDO::ATTR_PERSISTENT => true,
