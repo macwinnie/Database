@@ -335,7 +335,7 @@ class Database {
 		else {
 			$this->setException('Column to be selected is not defined');
 		}
-		return $return;
+		return null;
 	}
 
 	/**
