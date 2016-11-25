@@ -33,8 +33,9 @@ class Database {
 	 * @param String  $user     DB user
 	 * @param String  $pass     DB user password
 	 * @param String  $prefix   table prefix
+	 * @param String  $charset  charset it you want to set it special
 	 */
-	public function __construct($host=NULL, $database=NULL, $user=NULL, $pass=NULL, $prefix=NULL, $port=NULL) {
+	public function __construct($host=NULL, $database=NULL, $user=NULL, $pass=NULL, $prefix=NULL, $port=NULL, $charset=NULL) {
 		if (PHP_VERSION_ID < 50100) {
 			// PDO only defined with PHP > 5.1.0
 			throw new Exception('actually PHP-Version '.PHP_VERSION.' is too low &ndash; 5.1.0 at least needed for using PDO', 1);
@@ -43,6 +44,9 @@ class Database {
 	    $dsn = 'mysql:host=' . $host . ';dbname=' . $database;
 	    if ($port != NULL) {
 		$dsn .= ';port=' . $port;
+	    }
+	    if ($charset != NULL) {
+		$dsn .= ';charset=' . $charset;
 	    }
 	    $options = array (
 	    	// make connections persistent
