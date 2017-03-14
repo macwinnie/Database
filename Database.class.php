@@ -354,6 +354,9 @@ class Database {
 	public function queryColumn ($query, $params = array(), $selectcol = 0) {
 		$fetchStyle = false;
 		$all = $this->query($query, $params, PDO::FETCH_NUM);
+		if ($all == null) {
+			return array();
+		}
 		$return = array();
 		$this->fieldCount = 1;
 		foreach ($all as $i => $row) {
